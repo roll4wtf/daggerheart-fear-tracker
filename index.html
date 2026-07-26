@@ -7,20 +7,29 @@
   <title>Daggerheart Fear Tracker</title>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
+
     html,
     body {
       width: 800px;
-      height: 75px;
+      height: 220px;
       margin: 0;
       padding: 0;
       overflow: hidden;
       background: transparent;
+      font-family: Arial, sans-serif;
     }
 
-    body {
+    /* Oberer Bereich: Dieser Teil wird im Stream angezeigt */
+    .tracker {
+      width: 800px;
+      height: 75px;
       display: flex;
       align-items: center;
       justify-content: center;
+      background: transparent;
     }
 
     #wolves {
@@ -38,7 +47,7 @@
       object-fit: contain;
       justify-self: center;
 
-      opacity: 0.14;
+      opacity: 0.13;
       filter: grayscale(1) brightness(0.45);
       transform: scale(0.94);
 
@@ -57,36 +66,128 @@
 
       transform: scale(1);
     }
+
+    .wolf.newest {
+      animation: fearPulse 450ms ease-out;
+    }
+
+    @keyframes fearPulse {
+      0% {
+        transform: scale(0.7);
+        filter:
+          brightness(1.6)
+          drop-shadow(0 0 14px rgba(120, 220, 255, 1));
+      }
+
+      60% {
+        transform: scale(1.15);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    /* Unterer Bereich: Bedienfeld */
+    .controls {
+      width: 800px;
+      height: 145px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+
+      background: rgba(15, 18, 24, 0.94);
+      color: white;
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+    }
+
+    button {
+      min-width: 90px;
+      height: 48px;
+      border: 1px solid rgba(120, 200, 255, 0.7);
+      border-radius: 8px;
+      background: rgba(40, 70, 95, 0.95);
+      color: white;
+      font-size: 26px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: rgba(60, 105, 140, 1);
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    #fearValue {
+      min-width: 70px;
+      text-align: center;
+      font-size: 30px;
+      font-weight: bold;
+    }
+
+    #resetButton {
+      min-width: 150px;
+      height: 38px;
+      font-size: 16px;
+    }
   </style>
 </head>
 
 <body>
-  <div id="wolves"></div>
+  <div class="tracker">
+    <div id="wolves" aria-label="Fear Tracker"></div>
+  </div>
+
+  <div class="controls">
+    <div class="control-row">
+      <button id="minusButton" type="button">−</button>
+      <div id="fearValue">0 / 12</div>
+      <button id="plusButton" type="button">+</button>
+    </div>
+
+    <button id="resetButton" type="button">Zurücksetzen</button>
+  </div>
 
   <script>
     const MAX_FEAR = 12;
+    const STORAGE_KEY = "daggerheartFear";
 
-    function getFearValue() {
-      const parameters = new URLSearchParams(window.location.search);
-      const requestedFear = Number(parameters.get("fear") ?? 0);
+    let fear = loadFear();
+    let previousFear = fear;
 
-      if (!Number.isFinite(requestedFear)) {
+    function loadFear() {
+      const savedValue = Number(localStorage.getItem(STORAGE_KEY));
+
+      if (!Number.isFinite(savedValue)) {
         return 0;
       }
 
-      return Math.max(
-        0,
-        Math.min(MAX_FEAR, Math.round(requestedFear))
-      );
+      return Math.max(0, Math.min(MAX_FEAR, Math.round(savedValue)));
     }
 
-    function createFearTracker() {
-      const fear = getFearValue();
+    function saveFear() {
+      localStorage.setItem(STORAGE_KEY, String(fear));
+    }
+
+    function renderFear() {
       const container = document.getElementById("wolves");
+      const valueDisplay = document.getElementById("fearValue");
 
       container.innerHTML = "";
 
-      for (let position = 1; position <= MAX_FEAR; position++) {
+      for (let position = 1; position <= MAX_FEAR; position += 1) {
         const wolf = document.createElement("img");
 
         wolf.src = "Tracker Wolf.png";
@@ -97,11 +198,64 @@
           wolf.classList.add("active");
         }
 
+        if (fear > previousFear && position === fear) {
+          wolf.classList.add("newest");
+        }
+
         container.appendChild(wolf);
+      }
+
+      valueDisplay.textContent = `${fear} / ${MAX_FEAR}`;
+      saveFear();
+      previousFear = fear;
+    }
+
+    function increaseFear() {
+      if (fear < MAX_FEAR) {
+        fear += 1;
+        renderFear();
       }
     }
 
-    createFearTracker();
+    function decreaseFear() {
+      if (fear > 0) {
+        fear -= 1;
+        renderFear();
+      }
+    }
+
+    function resetFear() {
+      fear = 0;
+      renderFear();
+    }
+
+    document
+      .getElementById("plusButton")
+      .addEventListener("click", increaseFear);
+
+    document
+      .getElementById("minusButton")
+      .addEventListener("click", decreaseFear);
+
+    document
+      .getElementById("resetButton")
+      .addEventListener("click", resetFear);
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "+" || event.key === "ArrowUp") {
+        increaseFear();
+      }
+
+      if (event.key === "-" || event.key === "ArrowDown") {
+        decreaseFear();
+      }
+
+      if (event.key === "0") {
+        resetFear();
+      }
+    });
+
+    renderFear();
   </script>
 </body>
 </html>
