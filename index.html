@@ -3,11 +3,105 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>Daggerheart Fear Tracker</title>
-  <link rel="stylesheet" href="style.css">
+
+  <style>
+    html,
+    body {
+      width: 800px;
+      height: 75px;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #wolves {
+      width: 780px;
+      height: 70px;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      align-items: center;
+      gap: 8px;
+    }
+
+    .wolf {
+      width: 56px;
+      height: 56px;
+      object-fit: contain;
+      justify-self: center;
+
+      opacity: 0.14;
+      filter: grayscale(1) brightness(0.45);
+      transform: scale(0.94);
+
+      transition:
+        opacity 220ms ease,
+        filter 220ms ease,
+        transform 220ms ease;
+    }
+
+    .wolf.active {
+      opacity: 1;
+      filter:
+        grayscale(0)
+        brightness(1.08)
+        drop-shadow(0 0 6px rgba(90, 190, 255, 0.9));
+
+      transform: scale(1);
+    }
+  </style>
 </head>
+
 <body>
-  <div id="wolves" class="wolves" aria-label="Fear Tracker"></div>
-  <script src="script.js"></script>
+  <div id="wolves"></div>
+
+  <script>
+    const MAX_FEAR = 12;
+
+    function getFearValue() {
+      const parameters = new URLSearchParams(window.location.search);
+      const requestedFear = Number(parameters.get("fear") ?? 0);
+
+      if (!Number.isFinite(requestedFear)) {
+        return 0;
+      }
+
+      return Math.max(
+        0,
+        Math.min(MAX_FEAR, Math.round(requestedFear))
+      );
+    }
+
+    function createFearTracker() {
+      const fear = getFearValue();
+      const container = document.getElementById("wolves");
+
+      container.innerHTML = "";
+
+      for (let position = 1; position <= MAX_FEAR; position++) {
+        const wolf = document.createElement("img");
+
+        wolf.src = "Tracker Wolf.png";
+        wolf.alt = "";
+        wolf.className = "wolf";
+
+        if (position <= fear) {
+          wolf.classList.add("active");
+        }
+
+        container.appendChild(wolf);
+      }
+    }
+
+    createFearTracker();
+  </script>
 </body>
 </html>
